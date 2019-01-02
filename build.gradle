@@ -1,0 +1,87 @@
+buildscript {
+    ext {
+        springBootVersion = '1.5.18.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath('com.github.ksoichiro:gradle-console-reporter:0.5.0')
+        classpath('com.bmuschko:gradle-docker-plugin:3.2.5')
+        classpath('com.avast.gradle:gradle-docker-compose-plugin:0.7.1')
+
+    }
+}
+
+
+
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'jacoco'
+apply plugin: com.bmuschko.gradle.docker.DockerRemoteApiPlugin
+apply plugin: 'com.github.ksoichiro.console.reporter'
+apply plugin: 'docker-compose'
+apply plugin: 'org.springframework.boot'
+
+
+group = 'com.oracle.techtrial'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+
+bootRepackage {
+    mainClass = 'com.oracle.techtrial.notebook.NotebookApplication'
+}
+
+test {
+    useJUnit {
+        exclude '**/*IntTests.class'
+    }
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+task integrationTest(type: Test) {
+    useJUnit {
+        include '**/*IntTests.class'
+    }
+    testLogging {
+        showStandardStreams = true
+    }
+}
+
+dockerCompose.isRequiredBy(integrationTest)
+
+
+dockerCompose {
+    useComposeFiles = ['redis.yml']
+}
+
+jacocoTestReport {
+    group = "Reporting"
+    reports {
+        xml.enabled false
+        csv.enabled false
+    }
+}
+
+check.dependsOn jacocoTestReport
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-data-redis')
+    compile('redis.clients:jedis:2.9.0')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    runtimeOnly('org.springframework.boot:spring-boot-devtools')
+    compileOnly('org.springframework.boot:spring-boot-configuration-processor')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+
+}
